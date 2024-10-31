@@ -1,0 +1,104 @@
+﻿  // GameManager.cs
+  using UnityEngine;
+  using System.Collections;
+  using System.Collections.Generic;
+  
+  public class GameManager : MonoBehaviour
+  {
+      public enum Player { Black, White }
+      public Player currentPlayer = Player.Black;
+  
+      public GameObject blackPiecePrefab;
+      public GameObject whitePiecePrefab;
+      public AudioSource luoZi;
+  
+      private int[,] boardState = new int[15, 15]; // 0: 空，1: 黑子，2: 白子
+  
+      // ... 其他代码保持不变 ...
+  
+      void Update()
+      {
+          bool isOver = IsGameOver(boardState);
+          if (isOver)
+          {
+              // ... 游戏结束逻辑 ...
+          }
+          else
+          {
+              if (currentPlayer == Player.Black || (!isAIGame))
+              {
+                  if (Input.GetMouseButtonDown(0))
+                  {
+                      PlacePiece();
+                  }
+              }
+              else if (isAIGame && currentPlayer == Player.White)
+              {
+                  if (!isAITurning)
+                  {
+                      StartCoroutine(AITurn());
+                  }
+              }
+          }
+      }
+  
+      void PlacePiece()
+      {
+          Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+          RaycastHit hit;
+  
+          if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit))
+          {
+              int x = Mathf.RoundToInt(hit.point.x);
+              int z = Mathf.RoundToInt(hit.point.z);
+  
+              if (x < 0 || x >= 15 || z < 0 || z >= 15)
+                  return;
+  
+              if (boardState[x, z] != 0)
+                  return;
+  
+              GameObject piecePrefab = currentPlayer == Player.Black ? blackPiecePrefab : whitePiecePrefab;
+              GameObject newP = Instantiate(piecePrefab, new Vector3(x, 0.5f, z), Quaternion.identity);
+              newP.transform.SetParent(transform);
+              luoZi.Play();
+  
+              boardState[x, z] = currentPlayer == Player.Black ? 1 : 2;
+  
+              if (CheckWin(x, z))
+              {
+                  Debug.Log($"{currentPlayer} wins!");
+              }
+  
+              currentPlayer = currentPlayer == Player.Black ? Player.White : Player.Black;
+          }
+      }
+  
+  }
+  
+  // Board.cs
+  using UnityEngine;
+  
+  public class Board : MonoBehaviour
+  {
+      public GameObject cellPrefab; // 3D棋盘格子预制件
+      public int rows = 15;
+      public int columns = 15;
+  
+      void Start()
+      {
+          CreateGrid();
+      }
+  
+      void CreateGrid()
+      {
+          for (int x = 0; x < rows; x++)
+          {
+              for (int z = 0; z < columns; z++)
+              {
+                  Vector3 position = new Vector3(x, 0, z);
+                  Instantiate(cellPrefab, position, Quaternion.identity, transform);
+              }
+          }
+      }
+  }
